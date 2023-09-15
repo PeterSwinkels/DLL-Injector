@@ -2,7 +2,7 @@ Attribute VB_Name = "DLL_InjectorModule"
 'This module contains this program's core procedures.
 Option Explicit
 
-'The Microsoft Windows API constants and functions used by this program.
+'Defines the Microsoft Windows API constants and functions used by this program.
 Private Const ERROR_SUCCESS As Long = 0
 Private Const FORMAT_MESSAGE_FROM_SYSTEM As Long = &H1000
 Private Const FORMAT_MESSAGE_IGNORE_INSERTS As Long = &H200&
@@ -26,7 +26,7 @@ Private Declare Function WaitForSingleObject Lib "Kernel32.dll" (ByVal hHandle A
 Private Declare Function WriteProcessMemory Lib "Kernel32.dll" (ByVal hProcess As Long, ByVal lpBaseAddress As Any, lpBuffer As Any, ByVal nSize As Long, lpNumberOfBytesWritten As Long) As Long
 
 'The constants used by this program.
-Private Const MAX_STRING As Long = 65535   'The maximum number of characters used for a string buffer.
+Private Const MAX_STRING As Long = 65535   'Defines the maximum number of characters used for a string buffer.
 Private Const NO_HANDLE As Long = 0        'Defines "no handle".
 Private Const NO_PID As Long = 0           'Defines "no process id".
 
@@ -40,17 +40,17 @@ Dim Length As Long
    Err.Clear
    
    If Not ErrorCode = ERROR_SUCCESS Then
-      Description = String$(MAX_STRING, vbNullChar)
-      Length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM Or FORMAT_MESSAGE_IGNORE_INSERTS, CLng(0), ErrorCode, CLng(0), Description, Len(Description), CLng(0))
-      If Length = 0 Then
-         Description = "No description."
-      ElseIf Length > 0 Then
-         Description = Left$(Description, Length - 1)
-      End If
-     
-      Description = "API error: " & CStr(ErrorCode) & vbCr & Description & vbCr
-      Description = Description & "Return value: " & CStr(ReturnValue)
-      MsgBox Description, vbExclamation
+       Description = String$(MAX_STRING, vbNullChar)
+       Length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM Or FORMAT_MESSAGE_IGNORE_INSERTS, CLng(0), ErrorCode, CLng(0), Description, Len(Description), CLng(0))
+       If Length = 0 Then
+          Description = "No description."
+       ElseIf Length > 0 Then
+          Description = Left$(Description, Length - 1)
+       End If
+      
+       Description = "API error: " & CStr(ErrorCode) & vbCr & Description & vbCr
+       Description = Description & "Return value: " & CStr(ReturnValue)
+       MsgBox Description, vbExclamation
    End If
    
    CheckForError = ReturnValue
@@ -139,11 +139,11 @@ Dim TargetPath As String
    ChDir App.Path
    
    TargetPath = InputBox$("Enter a program's path:")
-   If TargetPath = Empty Then Exit Sub
-   DLLPath = InputBox$("Enter a .DLL's path:")
-   If DLLPath = Empty Then Exit Sub
+   If TargetPath = vbNullString Then Exit Sub
+   DLLPath = InputBox$("Enter a *.dll file's path:")
+   If DLLPath = vbNullString Then Exit Sub
    
-   If Dir$(DLLPath, vbArchive Or vbHidden Or vbNormal Or vbReadOnly Or vbSystem) = Empty Then
+   If Dir$(DLLPath, vbArchive Or vbHidden Or vbNormal Or vbReadOnly Or vbSystem) = vbNullString Then
       MsgBox "Could not find the specified DLL.", vbExclamation
    Else
       ProcessId = Shell(TargetPath, vbNormal)
