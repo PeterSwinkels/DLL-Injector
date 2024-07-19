@@ -39,6 +39,8 @@ Dim Length As Long
    ErrorCode = Err.LastDllError
    Err.Clear
    
+   On Error GoTo ErrorTrap
+   
    If Not ErrorCode = ERROR_SUCCESS Then
        Description = String$(MAX_STRING, vbNullChar)
        Length = FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM Or FORMAT_MESSAGE_IGNORE_INSERTS, CLng(0), ErrorCode, CLng(0), Description, Len(Description), CLng(0))
@@ -53,11 +55,18 @@ Dim Length As Long
        MsgBox Description, vbExclamation
    End If
    
+EndProcedure:
    CheckForError = ReturnValue
+   Exit Function
+   
+ErrorTrap:
+   If HandleError() = vbIgnore Then Resume EndProcedure
+   If HandleError(ReturnPreviousChoice:=True) = vbIgnore Then Resume
 End Function
 
 'This procedure ejects the specified DLL from the specified process.
 Private Function EjectDLL(InjectedDLLH As Long, ProcessH As Long) As Long
+On Error GoTo ErrorTrap
 Dim ExitCode As Long
 Dim FreeLibraryAddress As Long
 Dim ModuleH As Long
@@ -82,11 +91,35 @@ Dim ThreadH As Long
       End If
    End If
    
+EndProcedure:
    EjectDLL = ExitCode
+   Exit Function
+   
+ErrorTrap:
+   If HandleError() = vbIgnore Then Resume EndProcedure
+   If HandleError(ReturnPreviousChoice:=True) = vbIgnore Then Resume
 End Function
 
+'This procedure handles any errors that occur.
+Private Function HandleError(Optional ReturnPreviousChoice As Boolean = False) As Long
+Dim Description As String
+Dim ErrorCode As Long
+Static Choice As Long
+
+   Description = Err.Description
+   ErrorCode = Err.Number
+   On Error Resume Next
+   If Not ReturnPreviousChoice Then
+      Choice = MsgBox(Description & "." & vbCr & "Error code: " & CStr(ErrorCode), vbAbortRetryIgnore Or vbDefaultButton2 Or vbExclamation)
+   End If
+   
+   If Choice = vbAbort Then End
+   
+   HandleError = Choice
+End Function
 'This procedure injects the specified DLL into the specified process.
 Private Function InjectDLL(DLLPath As String, ProcessH As Long) As Long
+On Error GoTo ErrorTrap
 Dim BaseAddress As Long
 Dim ExitCode As Long
 Dim InjectedDLLH As Long
@@ -121,7 +154,13 @@ Dim ThreadH As Long
       ReturnValue = CheckForError(VirtualFreeEx(ProcessH, BaseAddress, Len(DLLPath), MEM_DECOMMIT))
    End If
    
+EndProcedure:
    InjectDLL = InjectedDLLH
+   Exit Function
+   
+ErrorTrap:
+   If HandleError() = vbIgnore Then Resume EndProcedure
+   If HandleError(ReturnPreviousChoice:=True) = vbIgnore Then Resume
 End Function
 
 
@@ -138,9 +177,9 @@ Dim TargetPath As String
    ChDrive Left$(App.Path, InStr(App.Path, ":"))
    ChDir App.Path
    
-   TargetPath = InputBox$("Enter a program's path:")
+   TargetPath = InputBox$("Enter a program's path:", ProgramInformation())
    If TargetPath = vbNullString Then Exit Sub
-   DLLPath = InputBox$("Enter a *.dll file's path:")
+   DLLPath = InputBox$("Enter a *.dll file's path:", ProgramInformation())
    If DLLPath = vbNullString Then Exit Sub
    
    If Dir$(DLLPath, vbArchive Or vbHidden Or vbNormal Or vbReadOnly Or vbSystem) = vbNullString Then
@@ -165,12 +204,30 @@ Dim TargetPath As String
          End If
       End If
    End If
-EndRoutine:
+   
+EndProcedure:
    Exit Sub
    
 ErrorTrap:
-   MsgBox "Error: " & CStr(Err.Number) & vbCr & Err.Description, vbExclamation
-   Resume EndRoutine
+   If HandleError() = vbIgnore Then Resume EndProcedure
+   If HandleError(ReturnPreviousChoice:=True) = vbIgnore Then Resume
 End Sub
 
 
+'This procedure returns information about this program.
+Private Function ProgramInformation() As String
+On Error GoTo ErrorTrap
+Dim Information As String
+
+   With App
+      Information = .Title & " v" & CStr(.Major) & "." & CStr(.Minor) & CStr(.Revision) & " - by: " & .CompanyName
+   End With
+
+EndProcedure:
+   ProgramInformation = Information
+   Exit Function
+   
+ErrorTrap:
+   If HandleError() = vbIgnore Then Resume EndProcedure
+   If HandleError(ReturnPreviousChoice:=True) = vbIgnore Then Resume
+End Function
